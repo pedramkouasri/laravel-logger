@@ -35,6 +35,13 @@ trait ActivityLogger
             }
         }
 
+        $methodType = Request::method();
+        if(strpos(Request::fullUrl() , "destroy") !== false){
+            $methodType = 'delete';
+        } elseif (strpos(Request::fullUrl() , "edit") !== false){
+            $methodType = 'put';
+        }
+
         if (!$description) {
             switch (strtolower(Request::method())) {
                 case 'post':
@@ -56,6 +63,10 @@ trait ActivityLogger
                     break;
             }
 
+            if(in_array($methodType , ['delete' , 'put'])){
+                $verb = $methodType == 'delete' ? trans('LaravelLogger::laravel-logger.verbTypes.deleted') : trans('LaravelLogger::laravel-logger.verbTypes.edited');
+            }
+
             $description = $verb.' '.Request::path();
         }
 
@@ -68,9 +79,10 @@ trait ActivityLogger
             'userAgent'     => Request::header('user-agent'),
             'locale'        => Request::header('accept-language'),
             'referer'       => Request::header('referer'),
-            'methodType'    => Request::method(),
+            'methodType'    => $methodType,
         ];
 
+        
         // Validation Instance
         $validator = Validator::make($data, config('laravel-logger.defaultActivityModel')::rules());
         if ($validator->fails()) {
