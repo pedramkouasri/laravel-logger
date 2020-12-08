@@ -34,16 +34,23 @@ trait ActivityLogger
                 $description = $userType.' '.trans('LaravelLogger::laravel-logger.verbTypes.crawled').' '.Request::fullUrl();
             }
         }
-
+        
+        
         $methodType = Request::method();
         if(strpos(Request::fullUrl() , "destroy") !== false){
             $methodType = 'delete';
-        } elseif (strpos(Request::fullUrl() , "edit") !== false){
-            $methodType = 'put';
+        }
+
+        if (strtolower($methodType) == "post"){
+            preg_match('/.+?\/store\/(\d+).*/', Request::fullUrl(), $output_array);
+
+            if(isset($output_array[1])){
+                $methodType = $output_array[1] == '0' ? $methodType : "PUT";
+            }
         }
 
         if (!$description) {
-            switch (strtolower(Request::method())) {
+            switch (strtolower($methodType)) {
                 case 'post':
                     $verb = trans('LaravelLogger::laravel-logger.verbTypes.created');
                     break;
@@ -61,10 +68,6 @@ trait ActivityLogger
                 default:
                     $verb = trans('LaravelLogger::laravel-logger.verbTypes.viewed');
                     break;
-            }
-
-            if(in_array($methodType , ['delete' , 'put'])){
-                $verb = $methodType == 'delete' ? trans('LaravelLogger::laravel-logger.verbTypes.deleted') : trans('LaravelLogger::laravel-logger.verbTypes.edited');
             }
 
             $description = $verb.' '.Request::path();
